@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start:dev": "./node_modules/.bin/nodemon --watch src --ext js,graphql --exec babel-node  src/index.js",
+    "start:dev": "nodemon --watch src --ext js,graphql --exec babel-node  src/index.js",
     "build": "babel src --out-dir build && shx cp .env build 2>/dev/null || : && shx cp src/schema.graphql build",
     "now-build": "babel src --out-dir build && shx cp src/schema.graphql build",
     "start": "npm run build && node build/index.js",
@@ -15,7 +15,7 @@
   "license": "MIT",
   "dependencies": {
     "@apollo/client": "^3.2.5",
-    "@neo4j/graphql": "^1.0.0",
+    "@neo4j/graphql": "^2.3.0",
     "apollo-server": "^2.19.2",
     "apollo-server-lambda": "^2.19.0",
     "csv-parse": "^4.10.1",
@@ -37,7 +37,7 @@
     "babel-plugin-auto-import": "^1.0.5",
     "babel-plugin-module-resolver": "^4.0.0",
     "cross-env": "^7.0.2",
-    "nodemon": "^1.19.1",
+    "nodemon": "^2.0.14",
     "shx": "^0.3.2"
   }
 }

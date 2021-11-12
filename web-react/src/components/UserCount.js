@@ -16,7 +16,7 @@ const useStyles = makeStyles({
 
 const GET_COUNT_QUERY = gql`
   {
-    userCount
+    propertyCount
   }
 `
 
@@ -29,7 +29,7 @@ export default function Deposits() {
     <React.Fragment>
       <Title>Total Users</Title>
       <Typography component="p" variant="h4">
-        {loading ? 'Loading...' : data.userCount}
+        {loading ? 'Loading...' : data.propertyCount}
       </Typography>
       <Typography color="textSecondary" className={classes.depositContext}>
         users found

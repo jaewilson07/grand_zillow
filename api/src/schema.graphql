@@ -1,96 +1,142 @@
-scalar Point
-scalar DateTime
-scalar PointInput
-
-type User {
-  userId: ID!
-  name: String
-  reviews: [Review] @relationship(type: "WROTE", direction: OUT)
-  avgStars: Float
-    @cypher(
-      statement: "MATCH (this)-[:WROTE]->(r:Review) RETURN toFloat(avg(r.stars))"
-    )
-  numReviews: Int
-    @cypher(statement: "MATCH (this)-[:WROTE]->(r:Review) RETURN COUNT(r)")
-  recommendations(first: Int = 3): [Business]
-    @cypher(
-      statement: "MATCH (this)-[:WROTE]->(r:Review)-[:REVIEWS]->(:Business)<-[:REVIEWS]-(:Review)<-[:WROTE]-(:User)-[:WROTE]->(:Review)-[:REVIEWS]->(rec:Business) WHERE NOT EXISTS( (this)-[:WROTE]->(:Review)-[:REVIEWS]->(rec) ) WITH rec, COUNT(*) AS num ORDER BY num DESC LIMIT $first RETURN rec"
-    )
-}
-
-type Business {
-  businessId: ID!
-  name: String!
-  address: String
-  city: String
-  state: String
-  location: Point
-  avgStars: Float
-    @cypher(
-      statement: "MATCH (this)<-[:REVIEWS]-(r:Review) RETURN coalesce(avg(r.stars),0.0)"
-    )
-  reviews: [Review] @relationship(type: "REVIEWS", direction: IN)
-  categories: [Category] @relationship(type: "IN_CATEGORY", direction: OUT)
-}
-
-type Review {
-  reviewId: ID!
-  stars: Float
-  text: String
-  date: DateTime
-  business: Business @relationship(type: "REVIEWS", direction: OUT)
-  user: User @relationship(type: "WROTE", direction: IN)
-}
-
-type Category {
-  name: ID!
-  businesses: [Business] @relationship(type: "IN_CATEGORY", direction: IN)
-}
-
-type RatingCount @exclude {
-  stars: Float!
-  count: Int!
-}
-
-type Mutation {
-  mergeBusinessCategory(categories: [String!]!, businessId: ID!): Business
-    @cypher(
-      statement: "MATCH (b:Business {businessId: $businessId}) UNWIND $categories AS cat MERGE (c:Category {name: cat}) MERGE (b)-[:IN_CATEGORY]->(c) RETURN b"
-    )
-  mergeUser(name: String!, userId: ID!): User
-    @cypher(
-      statement: """
-      MERGE (u:User {userId: $userId})
-      ON CREATE SET u.name = $name
-      RETURN u
-      """
-    )
-  mergeBusiness(
-    businessId: ID!
-    name: String!
-    address: String!
-    city: String!
-    state: String!
-    latitude: Float!
-    longitude: Float!
-  ): Business
-    @cypher(
-      statement: """
-      MERGE (b:Business {businessId: $businessId})
-      ON CREATE SET b.name = $name,
-                    b.address = $address,
-                    b.city = $city,
-                    b.state = $state,
-                    b.location = Point({latitude: $latitude, longitude: $longitude})
-      RETURN b
-      """
-    )
-}
-
 type Query {
-  userCount: Int! @cypher(statement: "MATCH (u:User) RETURN COUNT(u)")
-  ratingsCount: [RatingCount]
+  propertyInPolygon(latitude: Float, longitude: Float): [property]
     @cypher(
-      statement: "MATCH (r:Review) WITH r.stars AS stars, COUNT(*) AS count ORDER BY stars RETURN {stars: stars, count: count}"
+      statement: """
+      MATCH (p:property) WHERE EXISTS (p.polygon)
+      AND spatial.algo.withinPolygon(Point({latitude:$latitude ,  longitude:$longitude }), p.polygon)
+      RETURN p
+      """
     )
+
+  propertyCount: Int @cypher(statement: "MATCH (p:property) RETURN Count(p)")
+
+  cityValues: [cityValue]
+    @cypher(
+      statement: """
+      MATCH (c:city) <- [:IN_CITY] - (p:property)
+      WHERE EXISTS(p.TotalValue)
+      WITH c.name as city, avg(p.TotalValue) as average
+      RETURN {city: city, average: average } as obj
+      """
+    )
+}
+
+extend type city {
+  avgValue: Float
+    @cypher(
+      statement: """
+      MATCH (this) <-[:IN_CITY]-(p:property) RETURN avg(p.TotalValue)
+      """
+    )
+}
+
+extend type property {
+  estimatedSalesPrice: Int
+    @cypher(statement: "RETURN toInteger(this.TotalValue * 1.2)")
+
+  photos: [photo]
+}
+
+type appraisal {
+  _id: String!
+  building: Int!
+  land: Int!
+  property_id: String!
+  total: Int!
+  year: Int!
+  propertys: [property] @relationship(type: "HAS_APPRAISAL", direction: IN)
+}
+
+type city {
+  _id: String!
+  name: String!
+  propertys: [property] @relationship(type: "IN_CITY", direction: IN)
+}
+
+type cityValue {
+  city: String
+  average: Float
+}
+
+type neighborhood {
+  _id: String!
+  name: String!
+  propertys: [property] @relationship(type: "IN_NEIGHBORHOOD", direction: IN)
+}
+
+type photo {
+  _id: String!
+  url: String
+}
+
+type property {
+  _id: String!
+  AddressL_1: String
+  AddressLin: String
+  Assessment: String
+  COUNTYCD: Int!
+  CareOfTaxp: String
+  Certificat: String
+  CityStateZ: String
+  Continuous: Float!
+  CountyAbbr: String!
+  CountyName: String!
+  DbaName: String
+  FallowAcre: Float!
+  FarmsiteAc: Float!
+  ForestAcre: Float!
+  GISAcres: Float!
+  GrazingAcr: Float!
+  IrrigatedA: Float!
+  LegalDescr: String
+  LevyDistri: String
+  NonQualAcr: Float!
+  OwnerAdd_1: String
+  OwnerAdd_2: String
+  OwnerAddre: String
+  OwnerCity: String
+  OwnerName: String
+  OwnerState: String
+  OwnerZipCo: String
+  PropType: String
+  PropertyID: Int!
+  Range: String
+  Section: String
+  Shape_Area: Float!
+  Shape_Leng: Float!
+  Subdivisio: String
+  TaxYear: Int!
+  TotalAcres: Float!
+  TotalBuild: Int!
+  TotalLandV: Int!
+  TotalValue: Int!
+  Township: String
+  WildHayAcr: Float!
+  acres: Int
+  address: String
+  bedrooms: Int
+  category: String
+  full_baths: Int
+  half_baths: Int
+  heating: String
+  id: String!
+  location: Point
+  lot_size: Int
+  polygon: [Point]
+  sqft: Int
+  style: String
+  year_built: Int
+  in_city: [city] @relationship(type: "IN_CITY", direction: OUT)
+  in_subdivision: [subdivision]
+    @relationship(type: "IN_SUBDIVISION", direction: OUT)
+  in_neighborhood: [neighborhood]
+    @relationship(type: "IN_NEIGHBORHOOD", direction: OUT)
+  has_appraisal: [appraisal]
+    @relationship(type: "HAS_APPRAISAL", direction: OUT)
+}
+
+type subdivision {
+  _id: String!
+  name: String!
+  propertys: [property] @relationship(type: "IN_SUBDIVISION", direction: IN)
 }
