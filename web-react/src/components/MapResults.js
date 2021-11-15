@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Grid, Paper } from '@material-ui/core'
+import { Grid, GridList, GridListTile, Paper } from '@material-ui/core'
 import { makeStyles, useTheme } from '@material-ui/core'
 import clsx from 'clsx'
 
@@ -70,7 +70,6 @@ export default function MapResults({ properties }) {
                 )
               })}
             </MapGL>
-            ;
           </Paper>
         </Grid>
         <Grid item xs={12} md={4} lg={5}>
@@ -83,6 +82,13 @@ export default function MapResults({ properties }) {
               <li>Half Baths: {currentProperty.half_baths}</li>
               <li>Subdivision : {currentProperty.in_subdivision[0].name}</li>
             </ul>
+            <GridList cellHeight={160} cols={2}>
+              {currentProperty.photos.map((photo, index) => (
+                <GridListTile key={index} cols={1}>
+                  <img src={photo.url} />
+                </GridListTile>
+              ))}
+            </GridList>
           </Paper>
         </Grid>
       </Grid>
