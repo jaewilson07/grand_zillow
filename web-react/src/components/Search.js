@@ -46,7 +46,6 @@ export default function Search() {
   })
 
   if (error) {
-    console.log(error)
     return <p>Error</p>
   }
   if (loading) return <p>Loading</p>

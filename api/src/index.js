@@ -33,7 +33,12 @@ const driver = neo4j.driver(
  * https://neo4j.com/docs/graphql-manual/current/
  */
 
-const neoSchema = new Neo4jGraphQL({ typeDefs, resolvers, driver })
+const neoSchema = new Neo4jGraphQL({
+  typeDefs,
+  resolvers,
+  driver,
+  config: { jwt: { secret: process.env.JWT_SECRET } },
+})
 
 /*
  * Create a new ApolloServer instance, serving the GraphQL schema
@@ -42,10 +47,11 @@ const neoSchema = new Neo4jGraphQL({ typeDefs, resolvers, driver })
  * generated resolvers to connect to the database.
  */
 const server = new ApolloServer({
-  context: {
+  context: ({ req }) => ({
+    req,
     driver,
     driverConfig: { database: process.env.NEO4J_DATABASE || 'neo4j' },
-  },
+  }),
   schema: neoSchema.schema,
   introspection: true,
   playground: true,
